@@ -1,4 +1,5 @@
 const Hospital = require('../models/Hospital');
+const vacCenter = require('../models/VacCenter')
 
 //@desc     Get all hospitals
 //@route    GET /api/v1/hospitals
@@ -6,29 +7,30 @@ const Hospital = require('../models/Hospital');
 exports.getHospitals= async (req,res,next)=>{
     let query;
 
-    // Copy req.query
+    //Copy req.query
     const reqQuery={...req.query};
 
-    // Fields to exclude
+    //Fields to exclude
     const removeFields = ['select', 'sort', 'page', 'limit'];
     
-    // loop over remove fields and delete them from reqQuery
+
+    //loop over remove fields and delete them from reqQuery
     removeFields.forEach(param=>delete reqQuery[param]);
     console.log(reqQuery);
 
-    // Create query string
+    //Create query string
 
     let queryStr = JSON.stringify(reqQuery);
     queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match=>`$${match}`)
     query = Hospital.find(JSON.parse(queryStr)).populate('appointments');
 
-    // Select Fields
+    //Select Fields
     if(req.query.select) {
         const fields = req.query.select.split(',').join(' ');
         query = query.select(fields);
     }
 
-    // Sort
+    //Sort
     if(req.query.sort) {
         const sortBy=req.query.sort.split(',').join(' ');
         query = query.sort(sortBy);
@@ -36,7 +38,7 @@ exports.getHospitals= async (req,res,next)=>{
         query = query.sort('-createdAt');
     }
 
-    // Pagination
+    //Pagination
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 25;
     const startIndex = (page-1)*limit;
@@ -45,10 +47,10 @@ exports.getHospitals= async (req,res,next)=>{
     try {
         const total = await Hospital.countDocuments();
         query = query.skip(startIndex).limit(limit);
-        // Execute query
+        //Execute query
         const hospitals = await query;
 
-        // Pagination result
+        //Pagination result
         const pagination = {};
         if(endIndex<total) {
             pagination.next = {
@@ -125,4 +127,19 @@ exports.deleteHospital= async (req,res,next)=>{
     } catch(err) {
         return res.status(400).json({success:false});
     }
+};
+
+//@desc     Get vaccine centers
+//@route    GET /api/v1/hospitals/vacCenters/
+//@access   Public
+exports.getVacCenters = (req,res,next) => {
+    vacCenter.getAll((err, data) => {
+        if(err) {
+            res.status(500).send({
+                message: err.message || "Some error occured while retrieving Vaccine Centers."
+            });
+        } else {
+            res.send(data);
+        }
+    });
 };
